@@ -1,47 +1,115 @@
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import QPainter
-from PyQt5.QtCore import QTimer
+from PyQt5.QtCore import QTimer, Qt, QSize
+from PyQt5.QtGui import QFont
+
+
 import time
 
+def fontSize (size):
+    font = QFont()
+    font.setPointSize(size)
+    return font
 
 class TimerWidget (QLabel):
+
+    accMin = 0
+    accSec = 0
+    accFracSec = 0
 
     def __init__(self, parent=None):
         super(TimerWidget, self).__init__(parent)
         self.timer = QTimer()
         self.timer.timeout.connect(lambda: self.updateTime())
-        self.timerStarted = False
+        self.timerOn = False
         self.updateTime()
+        self.setFont(fontSize(60))
+
 
     def startTimer(self):
         self.timer.start(50)
         self.startTime = time.time()
-        self.timerStarted = True
+        self.timerOn = True
+
+    def stopTimer(self):
+        self.timer.stop()
+        self.timerOn = False
+        self.updateTime()
+
+    def reset(self):
+        self.timerOn = False
+        self.accSec = 0
+        self.accFracSec = 0
+        self.accMin = 0
+        self.updateTime()
+
+
+    def lap(self):
+        pass
 
     def updateTime(self):
+        if (self.timerOn):
+            timeNow = time.time()
+            gap = timeNow - self.startTime
+            # print("gap: {}".format(gap))
+            fracSeconds = int(gap % 1 / 0.01)
+            minutes = int(gap / 60)
+            seconds = int(gap) % 60
+            #print("minutes: "+str(minutes)+" seconds: "+str(seconds)+" fracSeconds: "+str(fracSeconds))
+            self.accFracSec += fracSeconds
+            self.accSec += seconds
+            self.accMin += minutes
+            #print("{}:{}:{}".format(self.accMin, self.accSec, self.accFracSec))
+            self.accSec += int(self.accFracSec/100)
+            self.accFracSec = int(self.accFracSec%100)
+            self.accMin += int(self.accSec/60)
+            self.accSec = int(self.accSec%60)
+            self.startTime = timeNow
         self.setText(self.getTimeString())
 
     def getTimeString(self):
-        if (self.timerStarted):
-            timeNow = time.time()
-            gap = timeNow-self.startTime
-            print("gap: {}".format(gap))
-            fracSeconds = int(gap%1/0.01);
-            minutes = int(gap/60);
-            seconds = int(gap)%60;
-            return "{}:{}:{}".format(minutes, seconds, fracSeconds)
-        else:
-            return "00:00:00"
+        minStr = ("0"+str(self.accMin))[-2:]
+        secStr = ("0"+str(self.accSec))[-2:]
+        fracSecStr = ("0"+str(self.accFracSec))[-2:]
+        return "{}:{}:{}".format(minStr, secStr, fracSecStr)
 
+def buttonGroup():
+    layout = QHBoxLayout()
+    global leftButton
+    leftButton = QPushButton("Reset")
+    leftButton.clicked.connect(LBttnSignal)
+    leftButton.setFont(fontSize(15))
+    global rightButton
+    rightButton = QPushButton("Start")
+    rightButton.clicked.connect(RBttnSignal)
+    rightButton.setFont(fontSize(15))
+    layout.addWidget (leftButton)
+    layout.addWidget (rightButton)
+    return layout
+
+def LBttnSignal():
+    if (timer.timerOn):
+        timer.lap()
+    else:
+        timer.reset()
+
+def RBttnSignal():
+    if (timer.timerOn):
+        rightButton.setText("Start")
+        leftButton.setText("Reset")
+        timer.stopTimer()
+    else:
+        rightButton.setText("Stop")
+        leftButton.setText("Lap")
+        timer.startTimer()
 
 app = QApplication([])
 window = QWidget()
-layout = QVBoxLayout()
+window.setFixedSize(QSize(600, 250))
+mainLayout = QVBoxLayout()
 timer = TimerWidget()
-layout.addWidget(timer)
-startButton = QPushButton("Start")
-startButton.clicked.connect(lambda: timer.startTimer())
-layout.addWidget(startButton)
-window.setLayout(layout)
+mainLayout.addWidget(timer, alignment=Qt.AlignCenter)
+mainLayout.addLayout(buttonGroup())
+window.setLayout(mainLayout)
 window.show()
 app.exec_()
