@@ -1,9 +1,7 @@
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import QPainter
-from PyQt5.QtCore import QTimer, Qt, QSize
+from PyQt5.QtCore import QTimer, Qt, QSize, QStringListModel
 from PyQt5.QtGui import QFont
-
-
 import time
 
 def fontSize (size):
@@ -16,6 +14,8 @@ class TimerWidget (QLabel):
     accMin = 0
     accSec = 0
     accFracSec = 0
+
+    timeList = []
 
     def __init__(self, parent=None):
         super(TimerWidget, self).__init__(parent)
@@ -42,10 +42,32 @@ class TimerWidget (QLabel):
         self.accFracSec = 0
         self.accMin = 0
         self.updateTime()
+        self.timeList.clear()
+        updateView()
 
 
     def lap(self):
-        pass
+        timeNow = time.time()
+        gap = timeNow - self.startTime
+        # print("gap: {}".format(gap))
+        fracSeconds = int(gap % 1 / 0.01)
+        minutes = int(gap / 60)
+        seconds = int(gap) % 60
+        # print("minutes: "+str(minutes)+" seconds: "+str(seconds)+" fracSeconds: "+str(fracSeconds))
+        self.accFracSec += fracSeconds
+        self.accSec += seconds
+        self.accMin += minutes
+        # print("{}:{}:{}".format(self.accMin, self.accSec, self.accFracSec))
+        self.accSec += int(self.accFracSec / 100)
+        self.accFracSec = int(self.accFracSec % 100)
+        self.accMin += int(self.accSec / 60)
+        self.accSec = int(self.accSec % 60)
+        self.startTime = timeNow
+        lapStr = "Lap {}".format(len(self.timeList)+1)
+        timeStr = self.getTimeString()
+        strAppended = lapStr + " "*(40-len(lapStr)) + timeStr
+        self.timeList.append(strAppended)
+        updateView()
 
     def updateTime(self):
         if (self.timerOn):
@@ -87,6 +109,17 @@ def buttonGroup():
     layout.addWidget (rightButton)
     return layout
 
+def updateView():
+    model = QStringListModel(timer.timeList)
+    lapView.setModel(model)
+
+def listView():
+    global lapView
+    lapView = QListView()
+    lapView.setEditTriggers(QAbstractItemView.NoEditTriggers)
+    lapView.setFont(fontSize(15))
+    return lapView
+
 def LBttnSignal():
     if (timer.timerOn):
         timer.lap()
@@ -103,13 +136,25 @@ def RBttnSignal():
         leftButton.setText("Lap")
         timer.startTimer()
 
+def exportSignal():
+    pass
+
+def exportButton():
+    export = QPushButton("Export")
+    export.setFont(fontSize(15))
+    export.clicked.connect(exportSignal)
+    return export
+
 app = QApplication([])
+app.setApplicationName("Timer")
 window = QWidget()
-window.setFixedSize(QSize(600, 250))
+window.setFixedWidth(550)
 mainLayout = QVBoxLayout()
 timer = TimerWidget()
 mainLayout.addWidget(timer, alignment=Qt.AlignCenter)
 mainLayout.addLayout(buttonGroup())
+mainLayout.addWidget(listView())
+mainLayout.addWidget(exportButton())
 window.setLayout(mainLayout)
 window.show()
 app.exec_()
