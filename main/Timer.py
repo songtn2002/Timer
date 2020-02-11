@@ -63,6 +63,16 @@ class TimerWidget (QLabel):
         self.run_id += 1
         updateView()
 
+    def discard(self):
+        self.timerOn = False
+        self.accSec = 0
+        self.accFracSec = 0
+        self.accMin = 0
+        self.updateTime()
+        self.timeList.clear()
+        self.current_run_lap_times.clear()
+        updateView()
+
 
     def lap(self):
         timeNow = time.time()
