@@ -7,6 +7,13 @@ import pandas as pd
 import time
 
 export_data = None # in general not a good idea to use global within methods but I don't know where export signal's return goes so I'm just having it set a global variable right now
+name = ""
+gender = ""
+runLength = ""
+runEvent = ""
+#gender
+#event
+#run length: int
 
 def fontSize (size):
     font = QFont()
@@ -124,10 +131,56 @@ class TimerWidget (QLabel):
             return "{}:{}:{}".format(minStr, secStr, fracSecStr), (self.accMin * 60 + self.accSec + self.accFracSec/100.0)
         return "{}:{}:{}".format(minStr, secStr, fracSecStr)
 
+class InputDialog (QDialog):
+
+    nameIn = None
+    genderIn = None
+    eventIn = None
+    runLengthIn = None
+
+    def __init__(self, parent=None):
+        super(InputDialog, self).__init__(parent)
+        dialogLayout = QVBoxLayout()
+        buttons = QDialogButtonBox(QDialogButtonBox.Ok|QDialogButtonBox.Cancel)
+        buttons.rejected.connect (lambda: self.cancelSignal())
+        buttons.accepted.connect (lambda: self.okSignal())
+        form = QFormLayout()
+        self.initFields()
+        form.addRow("Name: ", self.nameIn)
+        form.addRow("Gender: ", self.genderIn)
+        form.addRow("Run Event: ", self.eventIn)
+        form.addRow("Run Length: ", self.runLengthIn)
+        dialogLayout.addLayout(form)
+        dialogLayout.addWidget(buttons, alignment=Qt.AlignRight)
+        self.setLayout(dialogLayout)
+
+    def cancelSignal(self):
+        self.nameIn.setText(name)
+        self.genderIn.setText(gender)
+        self.eventIn.setText(runEvent)
+        self.runLengthIn.setText(runLength)
+        self.done(0)
+
+    def okSignal(self):
+        global name, runEvent, runLength, gender
+        name = self.nameIn.text()
+        gender = self.genderIn.text()
+        runEvent = self.eventIn.text()
+        runLength = self.runLengthIn.text()
+        self.done(0)
+
+    def initFields(self):
+        self.nameIn = QLineEdit()
+        self.genderIn = QLineEdit()
+        self.eventIn = QLineEdit()
+        self.runLengthIn = QLineEdit()
+
+
+
 def buttonGroup():
     layout = QHBoxLayout()
     global leftButton
-    leftButton = QPushButton("Reset")
+    leftButton = QPushButton("Info")
     leftButton.clicked.connect(LBttnSignal)
     leftButton.setFont(fontSize(15))
     global rightButton
@@ -137,6 +190,26 @@ def buttonGroup():
     layout.addWidget (leftButton)
     layout.addWidget (rightButton)
     return layout
+
+def lowerButtonGroup():
+    layout = QHBoxLayout()
+    global trackButton
+    trackButton = QPushButton("Track")
+    trackButton.clicked.connect(trackButtonSignal)
+    trackButton.setFont(fontSize(15))
+    global discardButton
+    discardButton = QPushButton("Discard")
+    discardButton.clicked.connect(discardButtonSignal)
+    discardButton.setFont(fontSize(15))
+    layout.addWidget (trackButton)
+    layout.addWidget (discardButton)
+    return layout
+
+def trackButtonSignal():
+    pass
+
+def discardButtonSignal():
+    pass
 
 def updateView():
     model = QStringListModel(timer.timeList)
@@ -153,12 +226,12 @@ def LBttnSignal():
     if (timer.timerOn):
         timer.lap()
     else:
-        timer.reset()
+        dialog.exec()
 
 def RBttnSignal():
     if (timer.timerOn):
         rightButton.setText("Start")
-        leftButton.setText("Reset")
+        leftButton.setText("Info")
         timer.stopTimer()
     else:
         rightButton.setText("Stop")
@@ -181,12 +254,15 @@ def exportButton():
 app = QApplication([])
 app.setApplicationName("Timer")
 window = QWidget()
+dialog = InputDialog()
+dialog.setModal(True)
 window.setFixedWidth(550)
 mainLayout = QVBoxLayout()
 timer = TimerWidget()
 mainLayout.addWidget(timer, alignment=Qt.AlignCenter)
 mainLayout.addLayout(buttonGroup())
 mainLayout.addWidget(listView())
+mainLayout.addLayout(lowerButtonGroup())
 mainLayout.addWidget(exportButton())
 window.setLayout(mainLayout)
 window.show()
