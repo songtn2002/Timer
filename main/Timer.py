@@ -158,7 +158,10 @@ class InputDialog (QDialog):
         self.nameIn.setText(name)
         self.genderIn.setText(gender)
         self.eventIn.setText(runEvent)
-        self.runLengthIn.setText(runLength)
+        if (runLength != None):
+            self.runLengthIn.setText(str(runLength))
+        else:
+            self.runLengthIn.setText("")
         self.done(0)
 
     def okSignal(self):
@@ -166,7 +169,11 @@ class InputDialog (QDialog):
         name = self.nameIn.text()
         gender = self.genderIn.text()
         runEvent = self.eventIn.text()
-        runLength = self.runLengthIn.text()
+        try:
+            runLength = int(self.runLengthIn.text())
+        except ValueError:
+            runLength = None
+            self.runLengthIn.setText("")
         self.done(0)
 
     def initFields(self):
